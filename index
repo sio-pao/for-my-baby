@@ -1,0 +1,627 @@
+import React, { useMemo, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Play, Pause, Settings, Calendar, Sparkles, Image as ImageIcon, Gift, Timer, Gamepad2, Flower2, Share2, MapPin, BookOpenText } from "lucide-react";
+import QRCode from "qrcode.react";
+
+/**
+ * 📱 Monthsary Love Website — single-file React app
+ * - Mobile-first, responsive
+ * - QR-ready: shows a QR pointing to the current URL
+ * - Modules included:
+ *   1) Love Timeline
+ *   2) Reasons I Like Her
+ *   3) Digital Love Letter
+ *   4) Photo Gallery (+ background song)
+ *   5) Guess the Memory (mini-quiz)
+ *   6) Virtual Bouquet (build & share)
+ *   7) Countdowns & Milestones (since you met)
+ *   8) Virtual Date Idea Box
+ *
+ * ✍️ How to personalize (no rebuild needed):
+ * - Tap the ⚙️ Settings button and update:
+ *   names, met date/time, song URL, photos (image URLs), timeline, reasons, letter, quiz, date ideas.
+ * - Your edits are saved to localStorage automatically.
+ *
+ * 🪄 Tip: After uploading online (e.g., Netlify, Vercel, GitHub Pages),
+ *   open the Share tab to display a QR you can print or send.
+ */
+
+// ---------- Default Content (you can change in Settings) ----------
+const DEFAULT_DATA = {
+  youName: "You",
+  herName: "Love",
+  // Set your real met date/time here (local timezone). Example below.
+  metAt: "2025-08-08T20:00:00", // YYYY-MM-DDTHH:mm:ss
+  songUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_2b1c4e0f29.mp3?filename=romantic-ambient-99602.mp3",
+  // Lightweight demo images from Unsplash source; replace with your own links
+  photos: [
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1500622944204-b135684e99fd?q=80&w=1200&auto=format&fit=crop",
+  ],
+  timeline: [
+    { date: "2025-08-01", title: "First Chat", details: "The convo that didn’t want to end.", emoji: "💬" },
+    { date: "2025-08-05", title: "First Coffee", details: "Nervous laughs, extra sugar.", emoji: "☕" },
+    { date: "2025-08-08", title: "We Met", details: "The moment everything clicked.", emoji: "✨" },
+    { date: "2025-08-15", title: "Inside Joke", details: "That one silly line we keep saying.", emoji: "🤣" },
+  ],
+  reasons: [
+    "You make ordinary days feel special.",
+    "Your laugh is my favorite sound.",
+    "You’re thoughtful in a hundred tiny ways.",
+    "You believe in me—and I in you.",
+    "You’re my safe place and my spark.",
+  ],
+  letter: `My dearest Love,\n\nHappy first monthsary! In little moments and big ones, you’ve made my days brighter. \nThank you for your patience, your kindness, and the way you listen. \nI’m excited for the next stories we’ll write together—one adventure, one hug, one sunset at a time.\n\nAlways,\nMe ❤️`,
+  quiz: [
+    {
+      q: "Where was our first date?",
+      options: ["Coffee shop", "Cinema", "Park", "Beach"],
+      answer: 0,
+      explain: "You ordered iced latte; I pretended to like Americano."
+    },
+    {
+      q: "What color shirt did I wear when we met?",
+      options: ["Black", "White", "Blue", "Green"],
+      answer: 2,
+      explain: "Blue because I was trying to look calm."
+    },
+  ],
+  dateIdeas: [
+    "Sunset walk + ice cream",
+    "Movie night at home (your pick)",
+    "Cook adobo together",
+    "Karaoke duet challenge",
+    "Picnic at the park with Polaroids",
+  ],
+};
+
+const STORAGE_KEY = "monthsary_site_data_v1";
+
+function usePersistentData() {
+  const [data, setData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : DEFAULT_DATA;
+    } catch (e) {
+      return DEFAULT_DATA;
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  }, [data]);
+  return [data, setData];
+}
+
+function SectionCard({ title, icon, children, id }) {
+  return (
+    <section id={id} className="scroll-mt-24">
+      <div className="rounded-2xl shadow-lg p-4 sm:p-6 bg-white/80 backdrop-blur border border-pink-100">
+        <div className="flex items-center gap-2 mb-3">
+          {icon}
+          <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
+        </div>
+        <div>{children}</div>
+      </div>
+    </section>
+  );
+}
+
+function TopNav({ current, setCurrent }) {
+  const tabs = [
+    { k: "timeline", label: "Timeline", icon: <Calendar className="w-4 h-4"/> },
+    { k: "reasons", label: "Reasons", icon: <Heart className="w-4 h-4"/> },
+    { k: "letter", label: "Letter", icon: <BookOpenText className="w-4 h-4"/> },
+    { k: "gallery", label: "Gallery", icon: <ImageIcon className="w-4 h-4"/> },
+    { k: "quiz", label: "Guess", icon: <Gamepad2 className="w-4 h-4"/> },
+    { k: "bouquet", label: "Bouquet", icon: <Flower2 className="w-4 h-4"/> },
+    { k: "count", label: "Countdowns", icon: <Timer className="w-4 h-4"/> },
+    { k: "ideas", label: "Date Ideas", icon: <Gift className="w-4 h-4"/> },
+    { k: "share", label: "Share", icon: <Share2 className="w-4 h-4"/> },
+  ];
+  return (
+    <nav className="fixed bottom-3 left-0 right-0 z-50">
+      <div className="mx-auto w-[95%] sm:w-[600px] bg-white/90 backdrop-blur border border-pink-100 shadow-xl rounded-2xl px-2 py-2 flex justify-between gap-1">
+        {tabs.map(t => (
+          <button
+            key={t.k}
+            onClick={() => setCurrent(t.k)}
+            className={`flex-1 flex flex-col items-center justify-center text-[10px] sm:text-xs py-2 rounded-xl ${current===t.k?"bg-pink-100":"hover:bg-gray-50"}`}
+          >
+            {t.icon}
+            <span className="mt-1">{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function AudioController({ url }) {
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    // Pause when url changes
+    setPlaying(false);
+  }, [url]);
+  return (
+    <div className="fixed top-3 right-3 z-40">
+      <audio id="bg-audio" src={url} loop />
+      <button
+        onClick={() => {
+          const el = document.getElementById("bg-audio");
+          if (!el) return;
+          if (playing) { el.pause(); setPlaying(false); }
+          else { el.play().then(()=>setPlaying(true)).catch(()=>alert("Tap to allow audio")); }
+        }}
+        className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-lg border ${playing?"bg-green-50 border-green-200":"bg-white border-gray-200"}`}
+        aria-label="Toggle background music"
+      >
+        {playing ? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}
+        <span className="text-xs hidden sm:inline">{playing?"Pause song":"Play our song"}</span>
+      </button>
+    </div>
+  );
+}
+
+function SettingsPanel({ open, onClose, data, setData }) {
+  const [draft, setDraft] = useState(data);
+  useEffect(()=>setDraft(data),[data]);
+
+  const update = (path, value) => {
+    setDraft(prev => ({ ...prev, [path]: value }));
+  };
+
+  const updateArray = (path, index, key, value) => {
+    setDraft(prev => ({
+      ...prev,
+      [path]: prev[path].map((item, i) => i===index ? { ...item, [key]: value } : item)
+    }));
+  };
+
+  const addItem = (path, value) => setDraft(prev => ({ ...prev, [path]: [...prev[path], value] }));
+  const removeItem = (path, index) => setDraft(prev => ({ ...prev, [path]: prev[path].filter((_,i)=>i!==index) }));
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 bg-black/40 flex">
+          <motion.div initial={{y:40,opacity:0}} animate={{y:0,opacity:1}} exit={{y:40,opacity:0}} className="m-auto w-[95%] max-w-3xl bg-white rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2"><Settings className="w-5 h-5"/> Personalize</h3>
+              <button onClick={onClose} className="px-3 py-1.5 rounded-lg border">Close</button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <label className="text-sm">Your name
+                <input className="mt-1 w-full rounded-lg border p-2" value={draft.youName} onChange={e=>update('youName', e.target.value)} />
+              </label>
+              <label className="text-sm">Her name
+                <input className="mt-1 w-full rounded-lg border p-2" value={draft.herName} onChange={e=>update('herName', e.target.value)} />
+              </label>
+              <label className="text-sm sm:col-span-2">Met date & time
+                <input type="datetime-local" className="mt-1 w-full rounded-lg border p-2" value={draft.metAt} onChange={e=>update('metAt', e.target.value)} />
+              </label>
+              <label className="text-sm sm:col-span-2">Our song (MP3 URL)
+                <input className="mt-1 w-full rounded-lg border p-2" value={draft.songUrl} onChange={e=>update('songUrl', e.target.value)} placeholder="https://...mp3" />
+              </label>
+
+              <div className="sm:col-span-2">
+                <h4 className="font-semibold mb-2">Photos (image URLs)</h4>
+                {draft.photos.map((p, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <input className="flex-1 rounded-lg border p-2" value={p} onChange={e=>{
+                      const v = e.target.value; setDraft(prev=>({ ...prev, photos: prev.photos.map((x,idx)=> idx===i? v : x) }));
+                    }} />
+                    <button className="px-3 rounded-lg border" onClick={()=>removeItem('photos', i)}>Remove</button>
+                  </div>
+                ))}
+                <button className="mt-1 px-3 py-1.5 rounded-lg border" onClick={()=>addItem('photos', '')}>+ Add Photo</button>
+              </div>
+
+              <div className="sm:col-span-2">
+                <h4 className="font-semibold mb-2">Timeline</h4>
+                {draft.timeline.map((t, i) => (
+                  <div key={i} className="grid sm:grid-cols-4 gap-2 mb-2">
+                    <input className="rounded-lg border p-2" value={t.date} onChange={e=>updateArray('timeline', i, 'date', e.target.value)} placeholder="YYYY-MM-DD"/>
+                    <input className="rounded-lg border p-2" value={t.title} onChange={e=>updateArray('timeline', i, 'title', e.target.value)} placeholder="Title"/>
+                    <input className="rounded-lg border p-2" value={t.details} onChange={e=>updateArray('timeline', i, 'details', e.target.value)} placeholder="Details"/>
+                    <input className="rounded-lg border p-2" value={t.emoji} onChange={e=>updateArray('timeline', i, 'emoji', e.target.value)} placeholder="🥰"/>
+                  </div>
+                ))}
+                <button className="mt-1 px-3 py-1.5 rounded-lg border" onClick={()=>addItem('timeline', {date:'', title:'', details:'', emoji:'💕'})}>+ Add Event</button>
+              </div>
+
+              <div className="sm:col-span-2">
+                <h4 className="font-semibold mb-2">Reasons I like her</h4>
+                {draft.reasons.map((r, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <input className="flex-1 rounded-lg border p-2" value={r} onChange={e=>{
+                      const v=e.target.value; setDraft(prev=>({ ...prev, reasons: prev.reasons.map((x,idx)=>idx===i?v:x) }));
+                    }}/>
+                    <button className="px-3 rounded-lg border" onClick={()=>removeItem('reasons', i)}>Remove</button>
+                  </div>
+                ))}
+                <button className="mt-1 px-3 py-1.5 rounded-lg border" onClick={()=>addItem('reasons', '')}>+ Add Reason</button>
+              </div>
+
+              <label className="text-sm sm:col-span-2">Digital love letter
+                <textarea className="mt-1 w-full rounded-lg border p-2 h-40" value={draft.letter} onChange={e=>update('letter', e.target.value)} />
+              </label>
+
+              <div className="sm:col-span-2">
+                <h4 className="font-semibold mb-2">Guess the Memory (Quiz)</h4>
+                {draft.quiz.map((q, i) => (
+                  <div key={i} className="rounded-xl border p-3 mb-2">
+                    <input className="w-full rounded-lg border p-2 mb-2" value={q.q} onChange={e=>updateArray('quiz', i, 'q', e.target.value)} placeholder="Question"/>
+                    {q.options.map((o, j) => (
+                      <div key={j} className="flex gap-2 mb-1">
+                        <input className="flex-1 rounded-lg border p-2" value={o} onChange={e=>{
+                          const v = e.target.value;
+                          setDraft(prev=>({ ...prev, quiz: prev.quiz.map((qq,idx)=> idx===i ? { ...qq, options: qq.options.map((oo,k)=>k===j?v:oo) } : qq) }));
+                        }}/>
+                        <label className="flex items-center gap-1 text-xs"><input type="radio" name={`ans-${i}`} checked={q.answer===j} onChange={()=>updateArray('quiz', i, 'answer', j)}/> Correct</label>
+                      </div>
+                    ))}
+                    <input className="w-full rounded-lg border p-2" value={q.explain||''} onChange={e=>updateArray('quiz', i, 'explain', e.target.value)} placeholder="Explanation (optional)"/>
+                  </div>
+                ))}
+                <button className="mt-1 px-3 py-1.5 rounded-lg border" onClick={()=>addItem('quiz', { q: '', options: ['', '', '', ''], answer: 0, explain: '' })}>+ Add Question</button>
+              </div>
+
+              <div className="sm:col-span-2">
+                <h4 className="font-semibold mb-2">Date Ideas</h4>
+                {draft.dateIdeas.map((d, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <input className="flex-1 rounded-lg border p-2" value={d} onChange={e=>{
+                      const v=e.target.value; setDraft(prev=>({ ...prev, dateIdeas: prev.dateIdeas.map((x,idx)=>idx===i?v:x) }));
+                    }}/>
+                    <button className="px-3 rounded-lg border" onClick={()=>removeItem('dateIdeas', i)}>Remove</button>
+                  </div>
+                ))}
+                <button className="mt-1 px-3 py-1.5 rounded-lg border" onClick={()=>addItem('dateIdeas', '')}>+ Add Idea</button>
+              </div>
+
+            </div>
+
+            <div className="mt-4 flex gap-2 justify-end">
+              <button className="px-3 py-2 rounded-lg border" onClick={()=>setDraft(DEFAULT_DATA)}>Reset to default</button>
+              <button className="px-3 py-2 rounded-lg bg-pink-600 text-white" onClick={()=>{ setData(draft); onClose(); }}>Save</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function LoveTimeline({ timeline }) {
+  const sorted = [...timeline].sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  return (
+    <div className="relative">
+      <div className="absolute left-3 sm:left-4 top-0 bottom-0 w-1 bg-pink-200 rounded-full"/>
+      <div className="space-y-4">
+        {sorted.map((t, i) => (
+          <div key={i} className="pl-10 sm:pl-12">
+            <div className="relative">
+              <div className="absolute -left-8 sm:-left-9 top-1 w-6 h-6 bg-white rounded-full border-2 border-pink-400 flex items-center justify-center text-sm">{t.emoji||'💕'}</div>
+              <div className="rounded-xl border p-3 bg-white/70">
+                <div className="text-xs text-gray-500">{t.date}</div>
+                <div className="font-semibold">{t.title}</div>
+                <div className="text-sm text-gray-700">{t.details}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Reasons({ reasons }) {
+  const [index, setIndex] = useState(0);
+  const next = () => setIndex((index+1)%Math.max(1, reasons.length));
+  return (
+    <div className="text-center">
+      <div className="text-lg sm:text-xl mb-3">Tap to reveal a reason ✨</div>
+      <button onClick={next} className="w-full rounded-2xl border p-6 bg-white shadow active:scale-[0.99]">
+        <div className="text-2xl sm:text-3xl">{reasons[index]||"Add your reasons in Settings."}</div>
+      </button>
+    </div>
+  );
+}
+
+function LoveLetter({ letter, names }) {
+  return (
+    <div className="prose max-w-none prose-pink">
+      <div className="rounded-2xl border p-4 sm:p-6 bg-white/70">
+        <p className="whitespace-pre-wrap leading-7 text-[16px] sm:text-[17px]">{letter}</p>
+        <div className="mt-4 text-right italic">— {names}</div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoGallery({ photos }) {
+  const [active, setActive] = useState(null);
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+        {photos.map((src, i) => (
+          <button key={i} onClick={()=>setActive(src)} className="aspect-square overflow-hidden rounded-xl border bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="us" className="w-full h-full object-cover"/>
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {active && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/80 z-50 flex">
+            <button className="absolute top-4 right-4 text-white text-xl" onClick={()=>setActive(null)}>✕</button>
+            <img src={active} alt="large" className="m-auto max-h-[90vh] max-w-[95vw] rounded-xl"/>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function Quiz({ quiz }) {
+  const [step, setStep] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const isDone = step >= quiz.length;
+
+  const onSelect = (idx) => {
+    if (selected!==null) return;
+    setSelected(idx);
+    const correct = quiz[step]?.answer;
+    if (idx===correct) setScore(s=>s+1);
+  };
+
+  const next = () => {
+    setSelected(null);
+    setStep(s=>s+1);
+  };
+
+  if (!quiz.length) return <div>Add quiz questions in Settings.</div>;
+
+  if (isDone) return (
+    <div className="text-center">
+      <div className="text-2xl font-bold mb-2">Score: {score} / {quiz.length}</div>
+      <div className="text-gray-600 mb-4">You remember us so well 🥰</div>
+      <button className="px-4 py-2 rounded-lg border" onClick={()=>{ setStep(0); setScore(0); setSelected(null); }}>Play again</button>
+    </div>
+  );
+
+  const q = quiz[step];
+  return (
+    <div>
+      <div className="mb-3 text-lg font-semibold">{q.q}</div>
+      <div className="grid gap-2">
+        {q.options.map((o, i) => {
+          const correct = selected!==null && i===q.answer;
+          const wrong = selected!==null && i===selected && i!==q.answer;
+          return (
+            <button key={i} onClick={()=>onSelect(i)} className={`text-left rounded-xl border p-3 ${correct?"bg-green-50 border-green-300": wrong?"bg-red-50 border-red-300":"bg-white"}`}>
+              {o}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 min-h-[24px] text-sm text-gray-600">{selected!==null && (q.explain||"")}</div>
+      <div className="mt-3 flex justify-end">
+        <button className="px-3 py-2 rounded-lg border" onClick={next} disabled={selected===null}>Next</button>
+      </div>
+    </div>
+  );
+}
+
+function Bouquet() {
+  const FLOWERS = [
+    { k: "🌻", name: "Sunflower" },
+    { k: "🌹", name: "Rose" },
+    { k: "🌷", name: "Tulip" },
+    { k: "🌼", name: "Daisy" },
+    { k: "💐", name: "Mixed" },
+  ];
+  const [bq, setBq] = useState([]);
+  const add = f => setBq(prev => [...prev, f]);
+  const remove = idx => setBq(prev => prev.filter((_,i)=>i!==idx));
+  const shareBouquet = () => {
+    const text = `A bouquet for you: ${bq.map(x=>x.k).join(' ')} \nFrom me, with love ❤️`;
+    navigator.clipboard?.writeText(text);
+    alert("Copied bouquet to clipboard! Paste in chat or message ✨");
+  };
+  return (
+    <div>
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
+        {FLOWERS.map(f => (
+          <button key={f.k} onClick={()=>add(f)} className="px-3 py-2 rounded-xl border bg-white min-w-[72px] flex items-center justify-center gap-2">
+            <span className="text-xl">{f.k}</span>
+            <span className="text-xs">{f.name}</span>
+          </button>
+        ))}
+      </div>
+      <div className="rounded-2xl border p-4 bg-white/70 min-h-[120px]">
+        <div className="mb-2 font-semibold">Your bouquet</div>
+        <div className="flex flex-wrap gap-2">
+          {bq.length? bq.map((f,i)=>(
+            <button key={i} onClick={()=>remove(i)} className="px-3 py-2 rounded-xl border bg-white">
+              <span className="text-2xl">{f.k}</span>
+            </button>
+          )): <div className="text-gray-500">Tap flowers above to add 🌸</div>}
+        </div>
+        <div className="mt-3 flex gap-2 justify-end">
+          <button className="px-3 py-2 rounded-lg border" onClick={()=>setBq([])}>Clear</button>
+          <button className="px-3 py-2 rounded-lg bg-pink-600 text-white" onClick={shareBouquet}>Copy bouquet</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Countdown({ metAt }) {
+  const start = useMemo(()=> new Date(metAt), [metAt]);
+  const [now, setNow] = useState(new Date());
+  useEffect(()=>{ const id = setInterval(()=>setNow(new Date()), 1000); return ()=>clearInterval(id); },[]);
+  const diff = Math.max(0, now - start);
+  const days = Math.floor(diff/(1000*60*60*24));
+  const hours = Math.floor((diff/(1000*60*60))%24);
+  const minutes = Math.floor((diff/(1000*60))%60);
+  const seconds = Math.floor((diff/1000)%60);
+
+  const milestones = useMemo(() => {
+    const list = [];
+    const addDays = d => new Date(start.getTime() + d*24*60*60*1000);
+    const fmt = d => d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+    list.push({ label: "1 Month", date: fmt(new Date(start.getFullYear(), start.getMonth()+1, start.getDate())) });
+    list.push({ label: "3 Months", date: fmt(new Date(start.getFullYear(), start.getMonth()+3, start.getDate())) });
+    list.push({ label: "6 Months", date: fmt(new Date(start.getFullYear(), start.getMonth()+6, start.getDate())) });
+    list.push({ label: "1 Year", date: fmt(new Date(start.getFullYear()+1, start.getMonth(), start.getDate())) });
+    list.push({ label: "100 Days", date: fmt(addDays(100)) });
+    list.push({ label: "200 Days", date: fmt(addDays(200)) });
+    list.push({ label: "365 Days", date: fmt(addDays(365)) });
+    return list;
+  }, [start]);
+
+  return (
+    <div className="grid sm:grid-cols-2 gap-4">
+      <div className="rounded-2xl border p-4 bg-white/70">
+        <div className="text-sm text-gray-600">Since you met</div>
+        <div className="text-3xl sm:text-4xl font-bold">{days}d {hours}h {minutes}m {seconds}s</div>
+      </div>
+      <div className="rounded-2xl border p-4 bg-white/70">
+        <div className="font-semibold mb-2">Milestones</div>
+        <ul className="text-sm grid grid-cols-2 gap-x-4 gap-y-1">
+          {milestones.map((m,i)=>(<li key={i} className="flex items-center gap-2"><Sparkles className="w-4 h-4"/> <span>{m.label} — {m.date}</span></li>))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function DateIdeaBox({ ideas }) {
+  const [shuffled, setShuffled] = useState([]);
+  useEffect(()=>{
+    const s = [...ideas];
+    for (let i=s.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [s[i],s[j]]=[s[j],s[i]]; }
+    setShuffled(s);
+  }, [ideas]);
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {shuffled.map((idea, i) => (
+        <motion.div key={i} initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="rounded-2xl border p-4 bg-white/70 shadow">
+          <div className="text-2xl mb-2">💡</div>
+          <div className="text-sm">{idea}</div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function ShareQR() {
+  const url = typeof window!=="undefined" ? window.location.href : "";
+  return (
+    <div className="text-center">
+      <div className="mb-2 text-sm text-gray-600">Scan to open this site</div>
+      <div className="inline-block bg-white p-3 rounded-2xl border shadow">
+        <QRCode value={url||"https://example.com"} size={200} includeMargin={true} />
+      </div>
+      <div className="mt-3 text-xs text-gray-600 break-all">{url}</div>
+      <div className="mt-2 text-xs">Tip: Deploy to Netlify/Vercel, then print this QR for your surprise!</div>
+    </div>
+  );
+}
+
+export default function LoveSite() {
+  const [data, setData] = usePersistentData();
+  const [current, setCurrent] = useState("timeline");
+  const [openSettings, setOpenSettings] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 via-rose-50 to-white text-gray-900 pb-24">
+      <AudioController url={data.songUrl} />
+
+      <header className="pt-8 px-4 sm:px-6 text-center">
+        <motion.h1 initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="text-3xl sm:text-4xl font-black tracking-tight">
+          {data.youName} <span className="text-pink-600">❤</span> {data.herName}
+        </motion.h1>
+        <div className="mt-1 text-sm text-gray-600 flex items-center justify-center gap-1">
+          <MapPin className="w-4 h-4"/> Our little corner of the world
+        </div>
+        <div className="mt-3">
+          <button onClick={()=>setOpenSettings(true)} className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white shadow">
+            <Settings className="w-4 h-4"/> Personalize
+          </button>
+        </div>
+      </header>
+
+      <main className="mt-6 px-4 sm:px-6 space-y-6 max-w-3xl mx-auto">
+        {current==="timeline" && (
+          <SectionCard id="timeline" title="Our Love Timeline" icon={<Calendar className="w-5 h-5 text-pink-600"/>}>
+            <LoveTimeline timeline={data.timeline} />
+          </SectionCard>
+        )}
+
+        {current==="reasons" && (
+          <SectionCard id="reasons" title={`Reasons I Like ${data.herName}`} icon={<Heart className="w-5 h-5 text-pink-600"/>}>
+            <Reasons reasons={data.reasons} />
+          </SectionCard>
+        )}
+
+        {current==="letter" && (
+          <SectionCard id="letter" title="A Digital Love Letter" icon={<BookOpenText className="w-5 h-5 text-pink-600"/>}>
+            <LoveLetter letter={data.letter} names={`${data.youName}`} />
+          </SectionCard>
+        )}
+
+        {current==="gallery" && (
+          <SectionCard id="gallery" title="Photo Gallery (Our Song)" icon={<ImageIcon className="w-5 h-5 text-pink-600"/>}>
+            <PhotoGallery photos={data.photos} />
+            <div className="mt-3 text-xs text-gray-600">Tip: Tap the ▶️ button on the top-right to play/pause our song.</div>
+          </SectionCard>
+        )}
+
+        {current==="quiz" && (
+          <SectionCard id="quiz" title="Guess the Memory" icon={<Gamepad2 className="w-5 h-5 text-pink-600"/>}>
+            <Quiz quiz={data.quiz} />
+          </SectionCard>
+        )}
+
+        {current==="bouquet" && (
+          <SectionCard id="bouquet" title="Build a Virtual Bouquet" icon={<Flower2 className="w-5 h-5 text-pink-600"/>}>
+            <Bouquet />
+          </SectionCard>
+        )}
+
+        {current==="count" && (
+          <SectionCard id="count" title="Countdowns & Milestones" icon={<Timer className="w-5 h-5 text-pink-600"/>}>
+            <Countdown metAt={data.metAt} />
+          </SectionCard>
+        )}
+
+        {current==="ideas" && (
+          <SectionCard id="ideas" title="Virtual Date Idea Box" icon={<Gift className="w-5 h-5 text-pink-600"/>}>
+            <DateIdeaBox ideas={data.dateIdeas} />
+          </SectionCard>
+        )}
+
+        {current==="share" && (
+          <SectionCard id="share" title="Share via QR" icon={<Share2 className="w-5 h-5 text-pink-600"/>}>
+            <ShareQR />
+          </SectionCard>
+        )}
+      </main>
+
+      <TopNav current={current} setCurrent={setCurrent} />
+
+      <SettingsPanel open={openSettings} onClose={()=>setOpenSettings(false)} data={data} setData={setData} />
+
+      <footer className="text-center text-xs text-gray-500 py-4 mt-6">
+        Made with ❤️ for our 1st monthsary
+      </footer>
+    </div>
+  );
+}
