@@ -2,11 +2,13 @@
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #ffe6eb, #fff0f6, #e6f7ff);
+    background: linear-gradient(to bottom, #ffe6eb, #fff0f6, #e6f7ff);
     overflow-x: hidden;
     text-align: center;
     color: #5a2d34;
     position: relative;
+    padding: 0;
+    min-height: 100vh;
   }
   
   /* Background Elements */
