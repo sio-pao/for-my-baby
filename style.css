@@ -92,6 +92,7 @@ body {
   .intro .line:nth-of-type(2) { animation-delay: 0.8s; }
   .intro .line:nth-of-type(3) { animation-delay: 1.3s; }
   .intro .line:nth-of-type(4) { animation-delay: 1.8s; }
+  .intro .line:nth-of-type(5) { animation-delay: 2.3s; }
 
   
   @keyframes fadeInUp {
