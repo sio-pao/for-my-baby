@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gallery</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Floating icons background -->
+  <div id="cherry-bg"></div>
+  <script src="cherries.js"></script>
+
+  <div class="container">
+    <header>
+      <div class="heart">📸</div>
+      <h1 class="title">Our Photo Gallery</h1>
+      <div class="subtitle">Captured moments, sealed with love 💖</div>
+    </header>
+
+    <div class="card">
+      <audio controls preload="none" style="margin-bottom: 1rem; width: 100%; border-radius: 12px;">
+        <source src="song.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+      </audio>
+
+      <div class="gallery" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+        <img src="images/photo1.jpg" alt="Photo 1" style="width: 100%; border-radius: 12px;">
+        <img src="images/photo2.jpg" alt="Photo 2" style="width: 100%; border-radius: 12px;">
+        <img src="images/photo3.jpg" alt="Photo 3" style="width: 100%; border-radius: 12px;">
+      </div>
+    </div>
+
+    <div class="footer" style="margin-top: 2rem;">
+      🎶 PS: Press play while you browse the memories.
+    </div>
+
+    <div style="text-align: center; margin-top: 1.5rem;">
+      <a class="nav-btn" href="index.html">🏠 Back to Home</a>
+    </div>
+  </div>
+</body>
+</html>

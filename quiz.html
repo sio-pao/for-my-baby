@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory Quiz</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="cherry-bg"></div>
+  <script src="cherries.js"></script>
+  <div class="container">
+    <header>
+      <div class="heart">🎮</div>
+      <h1 class="title">Guess the Memory</h1>
+      <div class="subtitle">Let’s see how well you remember, baby 💭</div>
+    </header>
+
+    <div class="card">
+      <div id="qText" style="font-weight:600; margin-bottom: 12px;"></div>
+      <div id="qButtons"></div>
+      <div id="qResult" class="small" style="margin-top: 10px; color: #884d5e;"></div>
+    </div>
+
+    <div class="footer" style="margin-top: 2rem;">
+      🧠 PS: This is just for fun! <br> I love you even if you forget everything 🙂
+    </div>
+
+    <a class="nav-btn" href="index.html">🏠 Back to Home</a>
+  </div>
+
+  <script>
+    const QUIZ_DATA = [
+      {
+        q: "Where was our first date?",
+        options: ["Drizzled Chicken", "UP Diliman", "QC Circle", "All of the Above"],
+        answer: 3,
+        explain: "You looked like an angel back then😍"
+      },
+      {
+        q: "Where did we first meet?",
+        options: ["McDonalds", "7/11", "QC Circle", "SM"],
+        answer: 1,
+        explain: "Siri, play 7/11 by Toneejay 🎶"
+      },
+      {
+        q: "Who said “I love you” first?",
+        options: ["You", "Jane", "Jane Lester", "All of the Above"],
+        answer: 3,
+        explain: "it's not me, it's you 😎"
+      },
+      {
+        q: "What’s the nickname I gave you early on?",
+        options: ["Jane", "Lester", "Janey", "JL"],
+        answer: 2,
+        explain: "Ja-Ney~"
+      },
+      {
+        q: "What pet do we want someday?",
+        options: ["Dog", "Cat", "Any cute animals", "All of the Above"],
+        answer: 3,
+        explain: "We're gonna build our own zoo!"
+      },
+      {
+        q: "What date is our monthsary?",
+        options: ["1st", "8th", "10th", "12th"],
+        answer: 0,
+        explain: "Every 1st is our special day ❤️"
+      },
+      {
+        q: "What's my favorite thing about you?",
+        options: ["Your smile", "Your laugh", "Your heart", "All of the Above"],
+        answer: 3,
+        explain: "Literally everything about you!"
+      },
+      {
+        q: "Where did we have our first kiss?",
+        options: ["QC Circle", "Your House", "My House", "Kape Hotel"],
+        answer: 3,
+        explain: "And the rest is history... 😁🥰"
+      }
+    ];
+
+    function initQuiz(data) {
+      if (!data || !data.length) return;
+      let step = 0, score = 0;
+      const qText = document.getElementById('qText');
+      const qButtons = document.getElementById('qButtons');
+      const qResult = document.getElementById('qResult');
+
+      function render() {
+        const q = data[step];
+        qText.innerText = `Q${step + 1}: ${q.q}`;
+        qButtons.innerHTML = '';
+        qResult.innerText = '';
+
+        q.options.forEach((opt, i) => {
+          const b = document.createElement('button');
+          b.className = 'quiz-btn'; // Changed from 'btn'
+          b.innerText = opt;
+          b.onclick = () => {
+            if (i === q.answer) {
+              qResult.innerText = '✅ Correct! ' + (q.explain || '');
+              score++;
+            } else {
+              qResult.innerText = '❌ Not quite. ' + (q.explain || '');
+            }
+
+            setTimeout(() => {
+              step++;
+              if (step >= data.length) {
+                qText.innerText = '🎉 You finished the quiz!';
+                qButtons.innerHTML = '';
+                qResult.innerText = `Your score: ${score}/${data.length}`;
+              } else {
+                render();
+              }
+            }, 1200);
+          };
+          qButtons.appendChild(b);
+        });
+      }
+
+      render();
+    }
+
+    initQuiz(QUIZ_DATA);
+  </script>
+</body>
+</html>
